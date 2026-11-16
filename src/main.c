@@ -12,7 +12,7 @@ int main()
     AddRight(current, "roll");
     current = MoveRight(root);
     AddLeft(current, "more");
-    AddRight(current, "floor");
+    //AddRight(current, "floor");
     SaveTree(root, "hueta.txt");
     GraphDumpTree(root);
     DeleteLeaf(root);

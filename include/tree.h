@@ -9,6 +9,7 @@
 #include <tree_struct.h>
 
 leaf_t* InitLeaf( const char* init_data );
+leaf_t* ChangeLeafData( leaf_t* current, const char* new_data );
 //leaf_t* InitTree( tree_t* tree, const char* init_data );
 void DeleteLeaf( leaf_t* leaf );
 
@@ -37,7 +38,7 @@ struct file_data_t
 };
 
 void SetFileName( file_data_t* file, const char* filename );
-void PrepareBuffer( file_data_t* file );
+char* PrepareBuffer( file_data_t* file );
 void ReadFromFile( file_data_t* file );
 leaf_t* LoadTree( const char* filename );
 leaf_t* LoadLeaf( const char** buffer );

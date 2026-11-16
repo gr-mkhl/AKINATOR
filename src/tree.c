@@ -2,27 +2,24 @@
 
 leaf_t* InitLeaf( const char* init_data )
 {
+    assert(init_data);
+
     leaf_t* new_leaf = (leaf_t*) calloc(1, sizeof(leaf_t));
     if (new_leaf == NULL)
         return NULL;
 
     new_leaf->data = strdup(init_data);
+
     return new_leaf;
 }
 
-//
-// leaf_t* InitTree( tree_t* tree, const char* init_data )
-// {
-//     tree->root = InitLeaf(init_data);
-//     tree->current = tree->root;
-//
-//     return tree->root;
-// }
-//
-// leaf_t* GetRoot( tree_t* tree )
-// {
-//     return tree->root;
-// }
+leaf_t* ChangeLeafData( leaf_t* current, const char* new_data )
+{
+    free(current->data);
+    current->data = strdup(new_data);
+
+    return current;
+}
 
 leaf_t* AddLeft( leaf_t* current, const char* data )
 {
@@ -65,7 +62,12 @@ leaf_t* MoveRight( leaf_t* current )
 void SaveTree( leaf_t* root, const char* filename )
 {
     assert(filename);
-    assert(root);
+
+    if (root == NULL)
+    {
+        fprintf(stderr, "Tree is empty, nothing to save\n");
+        return;
+    }
 
     FILE* output_file = fopen(filename, "w");
     assert(output_file);
@@ -78,10 +80,16 @@ void SaveTree( leaf_t* root, const char* filename )
 void FPrintTree( leaf_t* leaf, FILE* file )
 {
     if (leaf == NULL)
+    {
+        fprintf(file, "(null)");
         return;
+    }
     fprintf(file, "(%s", leaf->data);
-    FPrintTree(leaf->left, file);
-    FPrintTree(leaf->right, file);
+    if (leaf->left != NULL || leaf->right != NULL)
+    {
+        FPrintTree(leaf->left, file);
+        FPrintTree(leaf->right, file);
+    }
     fprintf(file, ")");
 }
 
@@ -124,7 +132,7 @@ int DumpLeaf( leaf_t* leaf, size_t rank, FILE* file )
         return 0;
     fprintf(file,
     "{ rank = %zu leaf%zu [shape = Mrecord; style = filled; fillcolor = \"#00abbb\"; color = \"#006b75\";\n"
-    "         label = \" { data = %s }\"]; }\n",
+    "         label = \" { %s }\"]; }\n",
                 rank, (size_t)leaf, leaf->data);
 
     if (DumpLeaf(leaf->left, rank + 1, file))
@@ -150,10 +158,13 @@ leaf_t* LoadTree( const char* filename )
 
     file_data_t file_data = {};
     SetFileName(&file_data, filename);
-    PrepareBuffer(&file_data);
+    if (PrepareBuffer(&file_data) == NULL)
+        return NULL;
+
     ReadFromFile(&file_data);
-    ON_LOG(LOG("file: %s, buffer: %s", filename, file_data.buffer))
+
     leaf_t* root = NULL;
+
     if (*file_data.buffer == '(')
     {
         const char* tree_buffer = file_data.buffer + 1; //not include the first '('
@@ -258,14 +269,18 @@ void SetFileName( file_data_t* file, const char* filename )
     return;
 }
 
-void PrepareBuffer( file_data_t* file )
+char* PrepareBuffer( file_data_t* file )
 {
     assert(file);
 
     struct stat my_file = {};
 
     int stat_status = stat(file->filename, &my_file);
-    assert(stat_status != -1);
+    if (stat_status == -1)
+    {
+        fprintf(stderr, "No such file or directory\n");
+        return NULL;
+    }
 
     file->file_size = my_file.st_size;
 
@@ -274,7 +289,7 @@ void PrepareBuffer( file_data_t* file )
 
     file->buffer[file->file_size] = '\0';
 
-    return;
+    return file->buffer;
 }
 
 void ReadFromFile( file_data_t* file )
