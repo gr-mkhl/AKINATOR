@@ -34,8 +34,8 @@ int main()
                 scanf("%s", filename); getchar(); printf("\n");
                 strcpy(file_path, "databases/");
                 strcat(file_path, filename);
-                ON_LOG(LOG("Save database on root: %s", file_path))
                 SaveTree(database_root, file_path);
+                ON_LOG(LOG("Save database on root: %s", file_path))
                 ON_LOG(GraphDumpTree(database_root);)
                 break;
             case 'n':

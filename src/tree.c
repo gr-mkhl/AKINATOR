@@ -59,14 +59,14 @@ leaf_t* MoveRight( leaf_t* current )
     return current->right;
 }
 
-void SaveTree( leaf_t* root, const char* filename )
+int SaveTree( leaf_t* root, const char* filename )
 {
     assert(filename);
 
     if (root == NULL)
     {
         fprintf(stderr, "Tree is empty, nothing to save\n");
-        return;
+        return 0;
     }
 
     FILE* output_file = fopen(filename, "w");
@@ -75,6 +75,8 @@ void SaveTree( leaf_t* root, const char* filename )
     FPrintTree(root, output_file);
 
     fclose(output_file);
+
+    return 1;
 }
 
 void FPrintTree( leaf_t* leaf, FILE* file )

@@ -14,7 +14,7 @@ leaf_t* ChangeLeafData( leaf_t* current, const char* new_data );
 void DeleteLeaf( leaf_t* leaf );
 
 void FPrintTree( leaf_t* leaf, FILE* file);
-void SaveTree( leaf_t* leaf, const char* filename );
+int SaveTree( leaf_t* leaf, const char* filename );
 int DumpLeaf( leaf_t* leaf, size_t rank, FILE* file );
 void GraphDumpTree( leaf_t* root );
 
