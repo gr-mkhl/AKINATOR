@@ -42,17 +42,13 @@ leaf_t* AddRight( leaf_t* current, const char* data )
     current->right = InitLeaf(data);
     return current->right;
 }
-//TODO - что делать с current == NULL?
-//это не тоже самое, что и current->left == NULL
-//это ошибка
+
 leaf_t* MoveLeft( leaf_t* current )
 {
     assert(current);
     return current->left;
 }
-//TODO - что делать с current == NULL?
-//это не тоже самое, что и current->right == NULL
-//это ошибка
+
 leaf_t* MoveRight( leaf_t* current )
 {
     assert(current);
@@ -78,6 +74,61 @@ int SaveTree( leaf_t* root, const char* filename )
 
     return 1;
 }
+
+int FullBinaryTreeVerifier( leaf_t* root )
+{
+    if (root == NULL)
+        return -1;
+
+    int num_of_children = 0;
+
+    if (root->left != NULL)
+    {
+        num_of_children++;
+        if (FullBinaryTreeVerifier(root->left) == -1)
+            return -1;
+    }
+
+    if (root->right != NULL)
+    {
+        num_of_children++;
+        if (FullBinaryTreeVerifier(root->right) == -1)
+            return -1;
+    }
+
+    return -1 * (num_of_children % 2);
+}
+
+stack_t* FindNameInATree( leaf_t* leaf, char* name, stack_t* path_stack )
+{
+    stack_t* ret_value = NULL;
+    int value = 0;
+
+    if (strcmp(leaf->data, name) == 0)
+        return path_stack;
+
+    if (leaf->left != NULL)
+    {
+        StackPush(path_stack, 1);
+        ret_value = FindNameInATree(leaf->left, name, path_stack);
+        if (ret_value != NULL)
+            return ret_value;
+    }
+
+    if (leaf->right != NULL)
+    {
+        StackPush(path_stack, 0);
+        ret_value = FindNameInATree(leaf->right, name, path_stack);
+        if (ret_value != NULL)
+            return ret_value;
+    }
+
+    StackPop(path_stack, &value);
+
+    return NULL;
+}
+
+
 
 void FPrintTree( leaf_t* leaf, FILE* file )
 {
@@ -218,47 +269,6 @@ leaf_t* LoadLeaf( const char** buffer )
     return current;
 }
 
-// treeNode_t *loadNode(char *treeBuffer, treeNode_t *currentNode, treeNode_t *parent, size_t *index, char *string)
-// {
-//     if (sscanf(&treeBuffer[*index], "%256[^()]", string) == -1)
-//     {
-//         fprintf(stderr, "ERROR: incorrect reading from buffer\n");
-//
-//         return NULL;
-//     }
-//
-//     *index += strlen(string);
-//
-//     if (strcmp(string, "nil") == 0)
-//     {
-//         (*index)++;
-//
-//         return NULL;
-//     }
-//
-//     currentNode = createNode(parent, string);
-//
-//     if (treeBuffer[*index] == '(')
-//     {
-//         (*index)++;
-//
-//         currentNode->left = loadNode(treeBuffer, currentNode->left, currentNode, index, string);
-//     }
-//
-//     if (treeBuffer[*index] == '(')
-//     {
-//         (*index)++;
-//
-//         currentNode->right = loadNode(treeBuffer, currentNode->right, currentNode, index, string);
-//     }
-//
-//     if (treeBuffer[*index] == ')')
-//     {
-//         (*index)++;
-//     }
-//
-//     return currentNode;
-// }
 
 void SetFileName( file_data_t* file, const char* filename )
 {

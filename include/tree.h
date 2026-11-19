@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <log.h>
 #include <tree_struct.h>
+#include <stack.h>
 
 leaf_t* InitLeaf( const char* init_data );
 leaf_t* ChangeLeafData( leaf_t* current, const char* new_data );
@@ -15,6 +16,7 @@ void DeleteLeaf( leaf_t* leaf );
 
 void FPrintTree( leaf_t* leaf, FILE* file);
 int SaveTree( leaf_t* leaf, const char* filename );
+int FullBinaryTreeVerifier( leaf_t* root );
 int DumpLeaf( leaf_t* leaf, size_t rank, FILE* file );
 void GraphDumpTree( leaf_t* root );
 
@@ -23,6 +25,7 @@ leaf_t* AddRight( leaf_t* current, const char* data );
 //leaf_t* GetRoot( tree_t* tree );
 leaf_t* MoveLeft( leaf_t* current );
 leaf_t* MoveRight( leaf_t* current );
+stack_t* FindNameInATree( leaf_t* root, char* name, stack_t* path_stack );
 
 #include <sys/stat.h>
 #include <fcntl.h>
