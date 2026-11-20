@@ -42,7 +42,7 @@ struct file_data_t
 
 void SetFileName( file_data_t* file, const char* filename );
 char* PrepareBuffer( file_data_t* file );
-void ReadFromFile( file_data_t* file );
+int ReadFromFile( file_data_t* file );
 leaf_t* LoadTree( const char* filename );
 leaf_t* LoadLeaf( const char** buffer );
 

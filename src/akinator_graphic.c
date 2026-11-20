@@ -1,6 +1,7 @@
 #include <akinator_graphic.h>
 
 char string[100] = {};
+char error_buffer[50] = {};
 char buffer[256] = {};
 stack_t path_stack = {};
 int letters = 0;
@@ -22,8 +23,8 @@ int main()
 
     leaf_t* root = NULL;
     leaf_t* current = root;
-    leaf_t* current_def = root;
-    int node_y_n = -1;
+    //leaf_t* current_def = root;
+    //int node_y_n = -1;
 
     button_t MenuButtons[] =
     {
@@ -31,7 +32,7 @@ int main()
         [PLAY] = {"PLAY", {SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.75, SCREEN_WIDTH * 0.15, 60}, MENU_BUTTONS_FONT_SIZE, LIGHTGRAY, GRAY},
         [SAVE] = {"SAVE", {SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.75, SCREEN_WIDTH * 0.15, 60}, MENU_BUTTONS_FONT_SIZE, LIGHTGRAY, GRAY},
         [LOAD] = {"LOAD", {SCREEN_WIDTH * 0.1, SCREEN_HEIGHT * 0.75, SCREEN_WIDTH * 0.15, 60}, MENU_BUTTONS_FONT_SIZE, LIGHTGRAY, GRAY},
-        [DEF]  = {"DEFENITION", {SCREEN_WIDTH * 0.18, SCREEN_HEIGHT * 0.87, SCREEN_WIDTH * 0.27, 60}, MENU_BUTTONS_FONT_SIZE - 10, LIGHTGRAY, GRAY},
+        [DEF]  = {"DEFINITION", {SCREEN_WIDTH * 0.18, SCREEN_HEIGHT * 0.87, SCREEN_WIDTH * 0.27, 60}, MENU_BUTTONS_FONT_SIZE - 10, LIGHTGRAY, GRAY},
         [COMP]  = {"COMPARISON", {SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.87, SCREEN_WIDTH * 0.27, 60}, MENU_BUTTONS_FONT_SIZE - 10, LIGHTGRAY, GRAY}
     };
 
@@ -55,6 +56,9 @@ int main()
         [DC_NEXT] = {"NEXT", {SCREEN_WIDTH * 0.8, SCREEN_HEIGHT * 0.6, SCREEN_WIDTH * 0.15, 60}, AKINATOR_BUTTONS_FONT_SIZE, LIGHTGRAY, GRAY}
     };
 
+    button_t back_button = {"BACK TO MENU", {SCREEN_WIDTH * 0.23, SCREEN_HEIGHT * 0.8, SCREEN_WIDTH * 0.54, SCREEN_HEIGHT * 0.13}, 50, LIGHTGRAY, GRAY};
+    SetButtonsTextPosition(&back_button, 1);
+
     InitAudioDevice();
 
     thinking_duck = LoadTexture("thinking_duck.png");
@@ -77,7 +81,7 @@ int main()
     while (!WindowShouldClose())
     {
         BeginDrawing();
-
+        ClearBackground(RAYWHITE);
 
         switch (current_screen)
         {
@@ -114,7 +118,13 @@ int main()
                 {
                     strcpy(buffer, "databases/");
                     strcat(buffer, string);
-                    SaveTree(root, buffer);
+                    if (SaveTree(root, buffer) == 0)
+                    {
+                        strcpy(error_buffer, "Empty database, nothing to save");
+                        current_screen = SCREEN_ERROR;
+                        break;
+                    }
+
                     current_screen = SCREEN_MENU;
                     ON_LOG(LOG("Saved database to: %s", buffer))
                     ON_LOG(GraphDumpTree(root);)
@@ -139,22 +149,25 @@ int main()
                     strcpy(buffer, "databases/");
                     strcat(buffer, string);
                     root = LoadTree(buffer);
-
+                    if (root == NULL)
+                    {
+                        strcpy(error_buffer, "No such database");
+                        current_screen = SCREEN_ERROR;
+                        break;
+                    }
                     if (FullBinaryTreeVerifier(root) == -1)
                     {
-                        fprintf(stderr, "Database is corrupted.\nIt is not full binary tree.\n");
+                        strcpy(error_buffer, "Database is corrupted. It is not full binary tree");
+                        current_screen = SCREEN_ERROR;
                         ON_LOG(LOG("Database is corrupted. It is not full binary tree."))
                         ON_LOG(GraphDumpTree(root);)
-                        current_screen = SCREEN_MENU;
+                        break;
                     }
-                    else
-                    {
-                        current = root;
-                        current_def = root;
-                        current_screen = SCREEN_MENU;
-                        ON_LOG(LOG("Loaded database from: %s", buffer))
-                        ON_LOG(GraphDumpTree(root);)
-                    }
+
+                    current = root;
+                    current_screen = SCREEN_MENU;
+                    ON_LOG(LOG("Loaded database from: %s", buffer))
+                    ON_LOG(GraphDumpTree(root);)
                 }
                 else if (button_status == BACK_BUTTON)
                     current_screen = SCREEN_MENU;
@@ -174,6 +187,7 @@ int main()
                     current_screen = SCREEN_MENU;
                     memset(string, 0, 100);
                     letters = 0;
+                    break;
                 }
                 else if (button_status == DC_NEXT)
                 {
@@ -182,68 +196,70 @@ int main()
                     memset(string, 0, 100);
                     letters = 0;
 
-                    if (FindNameInATree(root, name, &path_stack) == NULL)
+                    StackDtor(&path_stack);
+                    StackInit(&path_stack, 10);
+
+                    if (root == NULL)
                     {
-                        fprintf(stderr,"No such element in a tree\n");
-                        current_screen = SCREEN_MENU;
+                        strcpy(error_buffer, "Empty database");
+                        current_screen = SCREEN_ERROR;
+                        break;
                     }
-                    else
+                    else if (FindNameInATree(root, name, &path_stack) == NULL)
                     {
-                        current_screen = SCREEN_DEFINITION_OUTPUT;
-                        ReverseStack(&path_stack);
+                        strcpy(error_buffer, "No such element in a base");
+                        current_screen = SCREEN_ERROR;
+                        break;
                     }
+                    ReverseStack(&path_stack);
+
+                    current_screen = SCREEN_DEFINITION_OUTPUT;
                 }
                 break;
             }
             case SCREEN_DEFINITION_OUTPUT:
             {
-                if (current_def == NULL)
-                {
-                    fprintf(stderr, "Database is empty\n");
+                int status = CheckButtonsStatus(&back_button, 1);
+                if (status == 0)
                     current_screen = SCREEN_MENU;
-                }
+                DrawButtons(&back_button, 1);
 
-                StackPop(&path_stack, &node_y_n);
-                StackPush(&path_stack, node_y_n);
 
-                if (node_y_n == 0)
-                {
-                    strcpy(buffer, "not ");
-                    strcat(buffer, current_def->data);
-                }
-                else
-                    strcpy(buffer, current_def->data);
+                int value = -1;
+                leaf_t* current_def = root;
 
-                DrawTextBeautiful(buffer, SCREEN_HEIGHT * 0.5, 40, GRAY);
-                int button_status = DrawDCScreen(current_screen, DCScreenButtons, ARRAY_SIZE(DCScreenButtons));
-                if (button_status == DC_BACK)
+                stack_t copy_stack = {};
+
+                StackInitByCopy(&path_stack, &copy_stack);
+
+                char temp_def_buffer[100] = {};
+
+                int num_of_characteristics = (int)copy_stack.size;
+                DrawTextBeautiful("He/She/it:", 0.2 * SCREEN_HEIGHT, 50, GRAY);
+                int string_height = (num_of_characteristics > 10 ? (int)(SCREEN_HEIGHT * 0.6 / num_of_characteristics) : 40);
+
+                for (int i = 0; i < num_of_characteristics; i++)
                 {
-                    current_screen = SCREEN_MENU;
-                    StackDtor(&path_stack);
-                    StackInit(&path_stack, 10);
-                    current_def = root;
-                }
-                else if (button_status == DC_NEXT)
-                {
-                    if (path_stack.size > 1)
+                    StackPop(&copy_stack, &value);
+                    if (value == 0)
                     {
-                        StackPop(&path_stack, &node_y_n);
-                        if (node_y_n == 1)
-                            current_def = current_def->left;
-                        else if (node_y_n == 0)
-                            current_def = current_def->right;
+                        strcpy(temp_def_buffer, "- not ");
+                        strcat(temp_def_buffer, current_def->data);
+                        DrawTextBeautiful(temp_def_buffer, SCREEN_HEIGHT * 0.4 + i * string_height, string_height - 5, RED);
+                        current_def = current_def->right;
                     }
-                    else
+                    else if (value == 1)
                     {
-                        current_screen = SCREEN_MENU;
-                        StackDtor(&path_stack);
-                        StackInit(&path_stack, 10);
-                        current_def = root;
+                        strcpy(temp_def_buffer, "- ");
+                        strcat(temp_def_buffer, current_def->data);
+                        DrawTextBeautiful(temp_def_buffer, SCREEN_HEIGHT * 0.4 + i * string_height, string_height - 5, GREEN);
+                        current_def = current_def->left;
                     }
                 }
+                StackDtor(&copy_stack);
+
                 break;
             }
-
             case SCREEN_AKINATOR:
                 if (akinator_screen == LAST_QUESTION_SCREEN_NO1 || akinator_screen == LAST_QUESTION_SCREEN_NO2 || akinator_screen == LAST_QUESTION_SCREEN_YES)
                     ;
@@ -259,7 +275,6 @@ int main()
                 }
                 switch (DrawAkinatorGameScreen(akinator_screen, current, AkinatorScreenButtons, ARRAY_SIZE(AkinatorScreenButtons)))
                 {
-
                     case NEXT:
                         AkinatorScreenNextButtonPushed(&current_screen, &akinator_screen, &root, &current);
                         break;
@@ -287,6 +302,15 @@ int main()
                         break;
                 }
                 break;
+            case SCREEN_ERROR:
+            {
+                int status = CheckButtonsStatus(&back_button, 1);
+                if (status == 0)
+                    current_screen = SCREEN_MENU;
+                DrawButtons(&back_button, 1);
+                DrawTextBeautiful(error_buffer, SCREEN_HEIGHT * 0.4, 60, RED);
+                break;
+            }
             default:
                 break;
         }
@@ -295,6 +319,7 @@ int main()
 
     if (root != NULL)
         DeleteLeaf(root);
+
     StackDtor(&path_stack);
     CloseAudioDevice();
     UnloadSound(click);
@@ -365,7 +390,6 @@ int DrawDCScreen( screen_status current_screen, button_t* buttons, size_t size )
     if (status != -1)
         return status;
 
-    ClearBackground(RAYWHITE);
     if (current_screen == SCREEN_DEFINITION_INPUT)
     {
         DrawTextBeautiful("Whose definition do you want to see?", SCREEN_HEIGHT * 0.4, 40, GRAY);
@@ -387,7 +411,6 @@ int DrawSLScreen( screen_status current_screen, button_t* buttons, size_t size )
     if (status != -1)
         return status;
 
-    ClearBackground(RAYWHITE);
     DrawButtons(buttons, size);
 
     if (current_screen == SCREEN_LOAD)
@@ -422,7 +445,6 @@ int DrawAkinatorGameScreen( akinator_screens_t akinator_screen, leaf_t* current,
     if (status != -1)
         return status;
 
-    ClearBackground(RAYWHITE);
 
     int text_font = 50;
 
@@ -486,7 +508,6 @@ int DrawMenuScreen( button_t* buttons, size_t size )
     if (status != -1)
         return status;
 
-    ClearBackground(RAYWHITE);
     DrawTexturePro(prime_duck, {0, 0, 3548, 3688}, {0.2 * SCREEN_WIDTH, 0, 0.6 * SCREEN_WIDTH, 0.6 * SCREEN_WIDTH}, {0, 0}, 0.0, RAYWHITE);
     DrawButtons(buttons, size);
 

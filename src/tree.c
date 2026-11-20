@@ -60,10 +60,7 @@ int SaveTree( leaf_t* root, const char* filename )
     assert(filename);
 
     if (root == NULL)
-    {
-        fprintf(stderr, "Tree is empty, nothing to save\n");
         return 0;
-    }
 
     FILE* output_file = fopen(filename, "w");
     assert(output_file);
@@ -214,7 +211,11 @@ leaf_t* LoadTree( const char* filename )
     if (PrepareBuffer(&file_data) == NULL)
         return NULL;
 
-    ReadFromFile(&file_data);
+    if (ReadFromFile(&file_data) == -1)
+    {
+        free(file_data.buffer);
+        return NULL;
+    }
 
     leaf_t* root = NULL;
 
@@ -289,35 +290,37 @@ char* PrepareBuffer( file_data_t* file )
 
     int stat_status = stat(file->filename, &my_file);
     if (stat_status == -1)
-    {
-        fprintf(stderr, "No such file or directory\n");
         return NULL;
-    }
 
     file->file_size = my_file.st_size;
 
     file->buffer = (char*) calloc((size_t)(file->file_size + 1), sizeof(char));
-    assert(file->buffer != NULL);
+    if (file->buffer == NULL)
+        return NULL;
 
     file->buffer[file->file_size] = '\0';
 
     return file->buffer;
 }
 
-void ReadFromFile( file_data_t* file )
+int ReadFromFile( file_data_t* file )
 {
-    assert(file);
+    if (file == NULL)
+        return -1;
 
     file->file_stream = open(file->filename, O_RDONLY);
-    assert(file->file_stream != -1);
+    if (file->file_stream == -1)
+        return -1;
 
     file->text_size = read(file->file_stream, file->buffer, (size_t)file->file_size);
-    assert(file->text_size > 0);
+    if (file->text_size <= 0)
+        return -1;
 
     int close_status = close(file->file_stream);
-    assert(close_status != -1);
+    if (close_status == -1)
+        return -1;
 
     file->buffer[file->text_size] = '\0';
 
-    return;
+    return 0;
 }

@@ -60,7 +60,8 @@ enum screen_status
     SCREEN_LOAD = 2,
     SCREEN_SAVE = 3,
     SCREEN_DEFINITION_INPUT = 4,
-    SCREEN_DEFINITION_OUTPUT = 5
+    SCREEN_DEFINITION_OUTPUT = 5,
+    SCREEN_ERROR = 6
 };
 
 struct button_t

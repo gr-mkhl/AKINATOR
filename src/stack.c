@@ -62,6 +62,8 @@ error_id StackInitByCopyF( stack_t* src, stack_t* dest
     for (size_t i = 0; i < src->size; i++)
         dest->data[i] = src->data[i];
 
+    dest->size = src->size;
+
     dest->status = ALL_CORRECT;
 
     dest->this_ptr = dest;
